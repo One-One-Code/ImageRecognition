@@ -8,3 +8,9 @@
 
 ## QrCodeHelper
 二维码提取识别类，使用了Emgucv和zxing
+
+## GetPaperFromImage
+从大图中截取纸张区域，类似高拍仪拍照的图像截取，使用了Aforge类库
+
+## WaterMarkTest
+给图片添加水印，处理了包括：8位、24位、32位的图片
