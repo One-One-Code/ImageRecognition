@@ -30,7 +30,7 @@ namespace CvTest
             var grayImg = g.Apply(image);
             //二值化
             var threshold = new Threshold();
-            threshold.ThresholdValue = 120;
+            threshold.ThresholdValue = 80;
             var thresholdImage = threshold.Apply(grayImg);
 
             //找出纵横灰度值
@@ -40,11 +40,52 @@ namespace CvTest
             var hThreshold = (image.Width / 4) * 255;
             var hGrays = hs.Gray.Values.ToList();
             var vGrays = vs.Gray.Values.ToList();
-            var hmin = hGrays.FindIndex(p => p > hThreshold);
-            var hmax = hGrays.FindLastIndex(p => p > hThreshold);
-            var vmin = vGrays.FindIndex(p => p > vThreshold); ;
-            var vmax = vGrays.FindLastIndex(p => p > vThreshold);
+            var hmin = FindPaperBorder(hGrays, true, hThreshold, 0);
+            var hmax = FindPaperBorder(hGrays, false, hThreshold, 0);
+            var vmin = FindPaperBorder(vGrays, true, vThreshold, 0); ;
+            var vmax = FindPaperBorder(vGrays, false, vThreshold, 0);
             return new Rectangle(hmin, vmin, hmax - hmin, vmax - vmin);
+        }
+
+        /// <summary>
+        /// 尝试查找纸张边界
+        /// 考虑可能存在干扰直线的情况，查找到指定的白色直线后，再找40个宽度的直线，如果大部分为黑色则继续递归查找
+        /// </summary>
+        /// <param name="grays"></param>
+        /// <param name="increase"></param>
+        /// <param name="threshold"></param>
+        /// <param name="firstIndex"></param>
+        /// <returns></returns>
+        private static int FindPaperBorder(List<int> grays, bool increase, int threshold, int firstIndex)
+        {
+            firstIndex = firstIndex == 0 ? (increase ? grays.FindIndex(p => p > threshold) : grays.FindLastIndex(p => p > threshold)) : firstIndex;
+            if (increase && firstIndex > grays.Count / 3)
+            {
+                return firstIndex;
+            }
+
+            if (!increase && firstIndex < 2 * grays.Count / 3)
+            {
+                return firstIndex;
+            }
+            int blackCount = 0;
+            int blackIndex = 0;
+            int index = firstIndex;
+            for (int i = 0; i < 40; i++)
+            {
+                index = increase ? index + 1 : index - 1;
+                if (grays[index] <= threshold)
+                {
+                    blackCount++;
+                    blackIndex = index;
+                }
+            }
+
+            if (blackCount < 8)
+            {
+                return firstIndex;
+            }
+            return FindPaperBorder(grays, increase, threshold, increase ? blackIndex + 1 : blackIndex - 1);
         }
     }
 }
